@@ -1,0 +1,82 @@
+﻿@using Ignis.Website.Services
+@using Ignis.Website.Contracts
+@using Microsoft.AspNetCore.Components.Routing
+@inherits IgnisAsyncComponentBase
+@inject NavigationManager Router
+@inject IPageService PageService
+
+<nav class="@Css.Class("text-base lg:text-sm", CssClass!)">
+    <ul role="list" class="space-y-9">
+        @if (_sections != null)
+        {
+            foreach (var item in _sections)
+            {
+                <li @key="item.Title">
+                    <h2 class="font-display font-medium text-slate-900 dark:text-white">
+                        @item.Title
+                    </h2>
+                    <ul role="list"
+                        class="mt-2 space-y-2 border-l-2 border-slate-100 dark:border-slate-800 lg:mt-4 lg:space-y-4 lg:border-slate-200">
+                        @foreach (var pageItem in item.Pages)
+                        {
+                            var routerLink = ('/' + Router.ToBaseRelativePath(Router.Uri)).Split('#')[0];
+                            if (routerLink == "/") routerLink = "/docs/";
+                            var docsLink = "/docs" + pageItem.Link;
+                            var isCurrentPage = routerLink == docsLink;
+                            <li @key="pageItem.Link" class="relative">
+                                <a href="" @onclick:preventDefault @onclick="@(() => OpenPage(pageItem))"
+                                   class="@Css.Class("block w-full pl-3.5 before:pointer-events-none before:absolute before:-left-1 before:top-1/2 before:h-1.5 before:w-1.5 before:-translate-y-1/2 before:rounded-full", isCurrentPage ? "font-semibold text-sky-500 before:bg-sky-500" : "text-slate-500 before:hidden before:bg-slate-300 hover:text-slate-600 hover:before:block dark:text-slate-400 dark:before:bg-slate-700 dark:hover:text-slate-300")">
+                                    @pageItem.Title
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+        }
+    </ul>
+</nav>
+
+@code
+{
+    private Section[]? _sections;
+
+    [Parameter]
+    public EventCallback<Page> OnOpenPage { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object?>? AdditionalAttributes { get; set; }
+
+    private string? CssClass => AdditionalAttributes?.TryGetValue("class", out var cssClass) == true && cssClass is string value ? value : null;
+
+    protected override async Task OnInitializedAsync(CancellationToken cancellationToken)
+    {
+        _sections = await PageService.GetSectionsAsync(cancellationToken);
+
+        Router.LocationChanged += RouterOnLocationChanged;
+    }
+
+    private void RouterOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        Update();
+    }
+
+    private void OpenPage(Page pageItem)
+    {
+        OnOpenPage.InvokeAsync(pageItem);
+
+        Router.NavigateTo("/docs" + pageItem.Link);
+
+        Update();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            Router.LocationChanged -= RouterOnLocationChanged;
+        }
+        
+        base.Dispose(disposing);
+    }
+}

@@ -1,0 +1,48 @@
+name: 'CodeQL'
+
+on:
+  push:
+    branches: ['master']
+  pull_request:
+    branches: ['master']
+  schedule:
+    - cron: '40 7 * * 6'
+
+jobs:
+  Analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['csharp', 'javascript']
+    steps:
+      - uses: actions/checkout@v3
+      - uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      - run: npm i
+      - run: dotnet remove package Meziantou.Analyzer
+        working-directory: packages/Ignis.Components
+      - run: dotnet remove package Meziantou.Analyzer
+        working-directory: packages/Ignis.Fragments.Abstractions
+      - run: |
+          dotnet build tools/Ignis.Components.HeroIcons.Generator -c Release
+          dotnet tools/Ignis.Components.HeroIcons.Generator/bin/Release/net8.0/Ignis.Components.HeroIcons.Generator.dll
+      # This is required to build the wwwroot folder so it is included in the nuget package (https://github.com/DavidVollmers/Ignis/issues/2)
+      - run: dotnet build -c Release packages/Ignis.Components.Web
+      - run: dotnet pack -c Release
+      - run: dotnet pack -c Release packages/Ignis.Templates
+      - uses: github/codeql-action/analyze@v2
+        with:
+          category: '/language:${{matrix.language}}'

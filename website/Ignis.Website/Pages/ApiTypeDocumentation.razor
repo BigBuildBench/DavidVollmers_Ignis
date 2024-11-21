@@ -1,0 +1,40 @@
+﻿@page "/api/{type}/_"
+@using System.Web
+@inherits IgnisComponentBase
+@implements IHandleAfterRender
+@inject NavigationManager Router
+@* ReSharper disable once InconsistentNaming *@
+@inject IJSRuntime JSRuntime
+
+<PageTitle>
+    @_type.FullName
+</PageTitle>
+
+<Prose>
+    <IgnisTypeDocumentation Type="_type"/>
+</Prose>
+
+@code
+{
+    private Type _type = null!;
+
+    [Parameter] public string Type { get; set; } = null!;
+
+    protected override void OnUpdate()
+    {
+        var type = System.Type.GetType(HttpUtility.UrlDecode(Type));
+
+        if (type == null)
+        {
+            Router.NavigateTo("/");
+            return;
+        }
+
+        _type = type;
+    }
+
+    public async Task OnAfterRenderAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("OnPageLoad");
+    }
+}

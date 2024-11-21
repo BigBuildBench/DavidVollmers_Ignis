@@ -1,0 +1,281 @@
+﻿@inherits TestContext
+
+@code
+{
+    [Fact]
+    public void Outlet()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string dialogId = "dialog";
+        const string outletId = "dialog-outlet";
+
+        var cut = Render(@<div>
+                             <DialogOutlet AsElement="div" id="@outletId"/>
+                             <Dialog IsOpen id="@dialogId"></Dialog>
+                         </div>);
+
+        var dialogs = cut.FindAll($"#{dialogId}");
+        Assert.Single(dialogs);
+
+        var dialogDiv = dialogs.Single();
+        var outletDiv = cut.Find($"#{outletId}");
+        Assert.True(outletDiv.Contains(dialogDiv));
+    }
+
+    [Fact]
+    public void IgnoreOutlet()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string dialogId = "dialog";
+        const string outletId = "dialog-outlet";
+
+        var cut = Render(@<div>
+                             <DialogOutlet AsElement="div" id="@outletId"/>
+                             <Dialog IgnoreOutlet IsOpen id="@dialogId"></Dialog>
+                         </div>);
+
+        var dialogs = cut.FindAll($"#{dialogId}");
+        Assert.Single(dialogs);
+
+        var dialogDiv = dialogs.Single();
+        var outletDiv = cut.Find($"#{outletId}");
+        Assert.False(outletDiv.Contains(dialogDiv));
+    }
+
+    [Fact]
+    public void OutletWithTransition()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string dialogId = "dialog";
+        const string outletId = "dialog-outlet";
+        const string transitionId = "dialog-transition";
+
+        var cut = Render(@<div>
+                             <DialogOutlet AsElement="div" id="@outletId"/>
+                             <Transition Show Appear id="@transitionId">
+                                 <Dialog IsOpen id="@dialogId"></Dialog>
+                             </Transition>
+                         </div>);
+
+        var transitions = cut.FindAll($"#{transitionId}");
+        Assert.Single(transitions);
+
+        var dialogs = cut.FindAll($"#{dialogId}");
+        Assert.Single(dialogs);
+
+        var dialogDiv = dialogs.Single();
+        var transitionDiv = transitions.Single();
+        var outletDiv = cut.Find($"#{outletId}");
+        Assert.True(outletDiv.Contains(transitionDiv));
+        Assert.True(transitionDiv.Contains(dialogDiv));
+    }
+
+    [Fact]
+    public void IgnoreOutletWithTransition()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string dialogId = "dialog";
+        const string outletId = "dialog-outlet";
+        const string transitionId = "dialog-transition";
+
+        var cut = Render(@<div>
+                             <DialogOutlet AsElement="div" id="@outletId"/>
+                             <Transition Show Appear id="@transitionId">
+                                 <Dialog IsOpen IgnoreOutlet id="@dialogId"></Dialog>
+                             </Transition>
+                         </div>);
+
+        var transitions = cut.FindAll($"#{transitionId}");
+        Assert.Single(transitions);
+
+        var dialogs = cut.FindAll($"#{dialogId}");
+        Assert.Single(dialogs);
+
+        var dialogDiv = dialogs.Single();
+        var transitionDiv = transitions.Single();
+        var outletDiv = cut.Find($"#{outletId}");
+        Assert.False(outletDiv.Contains(transitionDiv));
+        Assert.True(transitionDiv.Contains(dialogDiv));
+    }
+
+    [Fact]
+    public async Task OutletWithTransitionAndChildren()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string dialogId = "dialog";
+        const string outletId = "dialog-outlet";
+        const string transitionId = "dialog-transition";
+        const string transitionChildId = "dialog-transition-child";
+        const string dialogPanelId = "dialog-panel";
+
+        var cut = Render(@<div>
+                             <DialogOutlet AsElement="div" id="@outletId"/>
+                             <Transition id="@transitionId" Context="transition">
+                                 <Dialog id="@dialogId" Context="dialog">
+                                     <TransitionChild id="@transitionChildId">
+                                         <DialogPanel id="@dialogPanelId"></DialogPanel>
+                                     </TransitionChild>
+                                 </Dialog>
+                             </Transition>
+                         </div>);
+
+        var transition = cut.FindComponent<Transition>();
+        transition.SetParametersAndRender(p => { p.Add(x => x.Show, true); });
+
+        // Transition
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        // TransitionChild
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+
+        var transitions = cut.FindAll($"#{transitionId}");
+        Assert.Single(transitions);
+
+        var dialogs = cut.WaitForElements($"#{dialogId}");
+        Assert.Single(dialogs);
+
+        var dialogDiv = dialogs.Single();
+        var transitionDiv = transitions.Single();
+        var outletDiv = cut.Find($"#{outletId}");
+        var transitionChildDiv = cut.Find($"#{transitionChildId}");
+        var dialogPanelDiv = cut.Find($"#{dialogPanelId}");
+        Assert.True(outletDiv.Contains(transitionDiv));
+        Assert.True(transitionDiv.Contains(dialogDiv));
+        Assert.True(dialogDiv.Contains(transitionChildDiv));
+        Assert.True(transitionChildDiv.Contains(dialogPanelDiv));
+    }
+
+    [Fact]
+    public async Task OutletWithTransitionAndChildren_EnterLeaveWithDuration()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string dialogId = "dialog";
+        const string outletId = "dialog-outlet";
+        const string transitionId = "dialog-transition";
+        const string transitionChildId = "dialog-transition-child";
+        const string dialogPanelId = "dialog-panel";
+
+        var cut = Render(@<div>
+                             <DialogOutlet AsElement="div" id="@outletId"/>
+                             <Transition id="@transitionId" Enter="duration-300" Leave="duration-200" Context="transition">
+                                 <Dialog id="@dialogId" Context="dialog">
+                                     <TransitionChild id="@transitionChildId">
+                                         <DialogPanel id="@dialogPanelId"></DialogPanel>
+                                     </TransitionChild>
+                                 </Dialog>
+                             </Transition>
+                         </div>);
+
+        var transition = cut.FindComponent<Transition>();
+        transition.SetParametersAndRender(p => { p.Add(x => x.Show, true); });
+
+        // Transition
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        // TransitionChild
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+
+        var transitions = cut.WaitForElements($"#{transitionId}");
+        Assert.Single(transitions);
+
+        var dialogs = cut.FindAll($"#{dialogId}");
+        Assert.Single(dialogs);
+
+        var dialogDiv = dialogs.Single();
+        var transitionDiv = transitions.Single();
+        var outletDiv = cut.Find($"#{outletId}");
+        var transitionChildDiv = cut.Find($"#{transitionChildId}");
+        var dialogPanelDiv = cut.Find($"#{dialogPanelId}");
+        Assert.True(outletDiv.Contains(transitionDiv));
+        Assert.True(transitionDiv.Contains(dialogDiv));
+        Assert.True(dialogDiv.Contains(transitionChildDiv));
+        Assert.True(transitionChildDiv.Contains(dialogPanelDiv));
+
+        transition.SetParametersAndRender(p => { p.Add(x => x.Show, false); });
+
+        // Transition
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        // TransitionChild
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+
+        cut.WaitForState(() => cut.FindAll($"#{dialogId}").Count == 0);
+        
+        transitions = cut.FindAll($"#{transitionId}");
+        Assert.Empty(transitions);
+
+        dialogs = cut.FindAll($"#{dialogId}");
+        Assert.Empty(dialogs);
+        
+        var transitionChildDivs = cut.FindAll($"#{transitionChildId}");
+        Assert.Empty(transitionChildDivs);
+        
+        var dialogPanelDivs = cut.FindAll($"#{dialogPanelId}");
+        Assert.Empty(dialogPanelDivs);
+    }
+
+    [Fact]
+    public async Task CustomModal_OpenCloseByButton()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        const string closeButtonId = "close-button";
+        const string openButtonId = "open-button";
+        const string outletId = "dialog-outlet";
+
+        var cut = Render(@<CustomDialogTest/>);
+        
+        var outlet = cut.Find($"#{outletId}");
+        Assert.Empty(outlet.Children);
+
+        var openButton = cut.Find($"#{openButtonId}");
+        openButton.Click();
+
+        // Transition
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        // TransitionChild
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        
+        var closeButton = cut.WaitForElement($"#{closeButtonId}");
+        Assert.True(outlet.Contains(closeButton));
+        
+        closeButton.Click();
+
+        // Transition
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        // TransitionChild
+        TestTimer.Trigger(null);
+        TestTimer.Trigger(null);
+        
+        cut.WaitForState(() => cut.FindAll($"#{closeButtonId}").Count == 0);
+        
+        outlet = cut.Find($"#{outletId}");
+        Assert.Empty(outlet.Children);
+    }
+}

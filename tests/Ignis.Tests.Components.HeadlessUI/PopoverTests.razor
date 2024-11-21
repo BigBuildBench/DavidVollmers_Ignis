@@ -1,0 +1,44 @@
+﻿@inherits TestContext
+
+@code
+{
+    [Fact]
+    public void Button_OnClick()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = Render(@<Popover>
+                             <PopoverButton>
+                             </PopoverButton>
+                         </Popover>);
+
+        cut.Find("button").Click();
+
+        var popover = cut.FindComponent<Popover>();
+        Assert.True(popover.Instance.IsOpen);
+
+        cut.Find("button").Click();
+
+        Assert.False(popover.Instance.IsOpen);
+    }
+
+    [Fact]
+    public void Button_OnClick_PreventDefault()
+    {
+        Services.AddIgnisTestServices();
+
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = Render(@<Popover>
+                             <PopoverButton OnClick="e => e.PreventDefault()">
+                             </PopoverButton>
+                         </Popover>);
+
+        cut.Find("button").Click();
+
+        var popover = cut.FindComponent<Popover>();
+        Assert.False(popover.Instance.IsOpen);
+    }
+}

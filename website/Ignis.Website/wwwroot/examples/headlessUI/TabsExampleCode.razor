@@ -1,0 +1,140 @@
+﻿@using Ignis.Components
+@using Ignis.Components.HeadlessUI
+@using Ignis.Utils
+
+@inherits IgnisComponentBase
+
+<div class="w-full max-w-md px-2 py-16 sm:px-0">
+    <TabGroup>
+        <TabList class="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
+            @foreach (var category in _postsByCategory.Keys)
+            {
+                <Tab @key="category"
+                     AsComponent="typeof(Fragment)"
+                     Context="tab">
+                    <button @ref="tab.Element"
+                            @attributes="tab.Attributes"
+                            class="@Css.Class("w-full rounded-lg py-2.5 text-sm font-medium leading-5 ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2", tab.IsSelected ? "text-blue-700 bg-white shadow" : "text-blue-100 hover:bg-white/[0.12] hover:text-white")"
+                            type="button">
+                        @category
+                    </button>
+                </Tab>
+            }
+        </TabList>
+        <TabPanels class="mt-2">
+            @foreach (var (category, posts) in _postsByCategory)
+            {
+                <TabPanel @key="category"
+                          class="rounded-xl bg-white p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2"
+                          Context="_">
+                    <ul>
+                        @foreach (var post in posts)
+                        {
+                            <li @key="post.Id"
+                                class="relative rounded-md p-3 hover:bg-gray-100">
+                                <h3 class="text-sm font-medium leading-5">
+                                    @post.Title
+                                </h3>
+
+                                <ul class="mt-1 flex space-x-1 text-xs font-normal leading-4 text-gray-500">
+                                    <li>@post.Date</li>
+                                    <li>&middot;</li>
+                                    <li>@post.CommentCount comments</li>
+                                    <li>&middot;</li>
+                                    <li>@post.ShareCount shares</li>
+                                </ul>
+
+                                <a href="#"
+                                   class="absolute inset-0 rounded-md ring-blue-400 focus:z-10 focus:outline-none focus:ring-2">
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </TabPanel>
+            }
+        </TabPanels>
+    </TabGroup>
+</div>
+
+@code
+{
+    private readonly Dictionary<string, Post[]> _postsByCategory = new()
+    {
+        {
+            "Recent", new Post[]
+            {
+                new()
+                {
+                    Id = 1,
+                    Title = "Does drinking coffee make you smarter?",
+                    Date = "5h ago",
+                    CommentCount = 5,
+                    ShareCount = 2
+                },
+                new()
+                {
+                    Id = 2,
+                    Title = "So you've bought coffee... now what?",
+                    Date = "2h ago",
+                    CommentCount = 3,
+                    ShareCount = 2
+                }
+            }
+        },
+        {
+            "Popular", new Post[]
+            {
+                new()
+                {
+                    Id = 1,
+                    Title = "Is tech making coffee better or worse?",
+                    Date = "Jan 7",
+                    CommentCount = 29,
+                    ShareCount = 16
+                },
+                new()
+                {
+                    Id = 2,
+                    Title = "The most innovative things happening in coffee",
+                    Date = "Mar 19",
+                    CommentCount = 24,
+                    ShareCount = 12
+                }
+            }
+        },
+        {
+            "Trending", new Post[]
+            {
+                new()
+                {
+                    Id = 1,
+                    Title = "Ask Me Anything: 10 answers to your questions about coffee",
+                    Date = "2d ago",
+                    CommentCount = 9,
+                    ShareCount = 5
+                },
+                new()
+                {
+                    Id = 2,
+                    Title = "The worst advice we've ever heard about coffee",
+                    Date = "4d ago",
+                    CommentCount = 1,
+                    ShareCount = 2
+                }
+            }
+        }
+    };
+
+    private class Post
+    {
+        public int Id { get; set; }
+
+        public string Title { get; set; } = null!;
+
+        public string Date { get; set; } = null!;
+
+        public int CommentCount { get; set; }
+
+        public int ShareCount { get; set; }
+    }
+}
